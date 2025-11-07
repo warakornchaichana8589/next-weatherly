@@ -3,11 +3,31 @@
 import { useState, useEffect } from "react";
 import { FaSun, FaMoon } from "react-icons/fa";
 import { useTheme } from "next-themes";
+import { signOut } from "next-auth/react";
+import { toast } from "react-toastify";
+import { useSession } from "next-auth/react";
+
 import Link from "next/link";
 export default function Header() {
+    const { status } = useSession();
     const [isOpen, setIsOpen] = useState(false);
     const [mounted, setMounted] = useState(false)
     const { theme, setTheme } = useTheme();
+    const [isAuth, setIsAuth] = useState(false)
+    const handleLogout = async () => {
+        await signOut({
+            redirect: true,
+            callbackUrl: "/"
+        });
+        toast.success("ออกจากระบบเรียบร้อยแล้ว", {
+            position: "top-center",
+        });
+        setIsAuth(false)
+    };
+    useEffect(() => {
+        setIsAuth(status === "authenticated" ? true : false)
+        setMounted(true)
+    }, [status])
     useEffect(() => {
         setMounted(true)
     }, [])
@@ -39,13 +59,22 @@ export default function Header() {
                             WeatherApp
                         </Link>
                     </div>
-                    <div>
+                    <div className="flex items-center justify-center gap-2.5">
                         <button
                             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                             className="p-2 rounded-full shadow shadow-gray-400 bg-background dark:bg-foreground hover:bg-gray-200  dark:hover:bg-gray-700"
                         >
                             {theme === "dark" ? <FaSun size={20} color="#ffffff" /> : <FaMoon size={20} color="#000000" />}
                         </button>
+                        {isAuth ?
+                            <button
+                                onClick={handleLogout}
+                                className="px-4 py-2 cursor-pointer rounded-full bg-gray-600 text-white hover:bg-gray-700 transition"
+                            >
+                                Logout
+                            </button>
+                            : ""
+                        }
                     </div>
                 </div>
             </nav>

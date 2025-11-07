@@ -16,30 +16,45 @@ export const authOptions: NextAuthOptions = {
                     username: "gogo",
                     name: "John Doe",
                     email: "you@example.com",
-                    password: "123456", // สมมติว่าเป็น password จริง
+                    password: "123456",
                 };
 
                 if (
                     credentials?.username === mockUser.username &&
                     credentials?.password === mockUser.password
                 ) {
-                    // ลบ password ออกก่อนส่งกลับ
+
                     const { password, ...userWithoutPass } = mockUser;
-                    return userWithoutPass;
+                    return {
+                        ...userWithoutPass,
+                        accessToken: "mock-jwt-token-12345",
+                    };
                 }
 
-                // ถ้า login ผิด
                 throw new Error("Invalid email or password");
             },
         }),
     ],
-
+    callbacks: {
+        async jwt({ token, user }) {
+           
+            if (user) {
+                token.accessToken = user.accessToken;
+            }
+            return token;
+        },
+        async session({ session, token }) {
+           
+            session.accessToken = token.accessToken as string;
+            return session;
+        },
+    },
     pages: {
-        signIn: "/auth/signin", // หน้า login ที่คุณสร้างเอง
+        signIn: "/auth/signin",
     },
 
     session: {
-        strategy: "jwt", // ใช้ JWT แทน session server
+        strategy: "jwt",
     },
 
     secret: process.env.NEXTAUTH_SECRET || "dev-secret",

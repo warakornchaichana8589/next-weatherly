@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import AuthGuard from "./AuthGuard"
-import Loader from "@/components/Common/Loader";
 import { toast } from "react-toastify";
 
 export default function SignIn() {
@@ -77,7 +76,7 @@ export default function SignIn() {
                                             type="submit"
                                             className="flex w-full cursor-pointer items-center justify-center rounded-md border border-primary bg-dark-white-text px-5 py-3 text-base text-dark transition duration-300 ease-in-out hover:bg-primary/90 hover:text-gray-100"
                                         >
-                                            Sign In {loading && <Loader />}
+                                            Sign In
                                         </button>
                                     </div>
                                 </form>
