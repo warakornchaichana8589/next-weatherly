@@ -36,7 +36,7 @@ export default function Header() {
     }
     return (
         <>
-            <nav className="fixed top-0 z-50 left-0 w-full shadow shadow-gray-200 dark:shadow-gray-800 bg-background dark:bg-foreground transition-all duration-300">
+            <nav className="fixed top-0 z-50 left-0 w-full shadow backdrop-blur-md shadow-gray-200 dark:shadow-gray-800 bg-white/30 dark:bg-foreground transition-all duration-300">
                 <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center justify-between">
                     <div className="flex justify-between h-16 items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width={48} viewBox="0 0 48 48" id="rainy-weather">

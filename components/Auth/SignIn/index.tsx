@@ -4,8 +4,11 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import AuthGuard from "./AuthGuard"
 import { toast } from "react-toastify";
-
+import Image from "next/image";
+import { useTheme } from "next-themes";
+import { ShimmerButton } from "@/components/ui/shimmer-button"
 export default function SignIn() {
+    const { theme, setTheme } = useTheme();
     const router = useRouter();
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
@@ -41,11 +44,21 @@ export default function SignIn() {
             <section className="w-full">
                 <div className="container mx-auto min-h-screen flex items-center justify-center">
                     <div className="w-full h-full flex items-center justify-center">
-                        <div className="flex flex-col items-center">
-                            <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-                                <h2 className="mt-10 text-center text-2xl/9 font-bold tracking-tight text-gray-900 dark:text-white">Sign in to your account</h2>
+                        <div data-aos="zoom-in" className="flex flex-col items-center p-4 sm:p-8 ">
+                            <div className="relative logo flex flex-col justify-center items-center">
+                                <Image
+                                    src="/images/logo.png"
+                                    alt="Logo"
+                                    width={80}
+                                    height={80}
+                                    className="object-contain"
+                                />
+                                <span className="text-gray-900 dark:text-white text-xl -mt-6"><span className="text-5xl">W</span>eathweApp</span>
                             </div>
-                            <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
+                            <div className="mt-4 sm:mt-8 sm:mx-auto sm:w-full sm:max-w-sm">
+                                <h2 className="text-center text-2xl/9 font-bold tracking-tight text-gray-900 dark:text-white">Sign in</h2>
+                            </div>
+                            <div className="mt-4 sm:mt-8 sm:mx-auto sm:w-full sm:max-w-sm h-full flex flex-col justify-between">
                                 <form onSubmit={handleLogin} className="flex flex-col items-center">
                                     <div className="mb-[22px]">
                                         <input
@@ -70,14 +83,20 @@ export default function SignIn() {
                                             className="w-full rounded-md border border-stroke bg-transparent px-5 py-3 text-base text-dark outline-none transition placeholder:text-dark-6 focus:border-primary focus-visible:shadow-none dark:border-dark-3 dark:text-white dark:focus:border-primary"
                                         />
                                     </div>
-                                    <div className="mb-9">
+                                    <div className="w-full flex">
                                         <button
                                             disabled={loading}
                                             type="submit"
-                                            className="flex w-full cursor-pointer items-center justify-center rounded-md border border-primary bg-dark-white-text px-5 py-3 text-base text-dark transition duration-300 ease-in-out hover:bg-primary/90 hover:text-gray-100"
+                                            className="cursor-pointer mx-auto"
                                         >
-                                            Sign In
+                                            <ShimmerButton background={theme === "dark" ? "#595959" : "#E3E3E3"} shimmerColor="#FFF59E">
+                                                <div className="flex items-center w-full">
+                                                    <span className="text-gray-900 text-sm">Login</span>
+                                                </div>
+
+                                            </ShimmerButton>
                                         </button>
+
                                     </div>
                                 </form>
                             </div>

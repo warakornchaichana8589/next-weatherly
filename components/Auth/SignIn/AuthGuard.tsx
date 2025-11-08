@@ -16,7 +16,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     if (status === "loading" || status === "authenticated") {
         return (
             <div className="w-full h-full flex justify-center items-center min-h-screen bg-dark-white-text gap-2.5">
-                <p className="text-gray-600 dark:text-gray-300">กำลังตรวจสอบ...</p> 
                 <Loader />
             </div>
         );

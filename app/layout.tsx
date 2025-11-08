@@ -1,4 +1,3 @@
-
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeProvider } from "@/utils/themeProviders"
@@ -10,8 +9,8 @@ import "react-toastify/dist/ReactToastify.css";
 import ThemeAwareToaster from "@/components/ThemeAwareToaster";
 
 export const metadata: Metadata = {
-  title: "Weatherly",
-  description: "Weatherly",
+  title: "WeatherApp",
+  description: "WeatherApp",
 };
 
 export default function RootLayout({ children }: {
@@ -21,6 +20,7 @@ export default function RootLayout({ children }: {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="icon" href="/favicon.png" type="image/png" />
       </head>
       <body>
         <SessionWrapper>
