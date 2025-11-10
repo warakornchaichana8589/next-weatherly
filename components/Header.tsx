@@ -5,12 +5,24 @@ import { FaSun, FaMoon } from "react-icons/fa";
 import { useTheme } from "next-themes";
 import { signOut, useSession } from "next-auth/react";
 import { toast } from "react-toastify";
+import { useEffect, useState } from "react";
 
 export default function Header() {
   const { status } = useSession();
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const isAuthenticated = status === "authenticated";
+
+  const handleThemeToggle = () => {
+    if (!mounted) return;
+    const isDark = (resolvedTheme ?? "light") === "dark";
+    setTheme(isDark ? "light" : "dark");
+  };
 
   const handleLogout = async () => {
     await signOut({ redirect: true, callbackUrl: "/" });
@@ -44,11 +56,17 @@ export default function Header() {
         <div className="flex items-center gap-3">
           
           <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            onClick={handleThemeToggle}
             className="rounded-full bg-background p-2 shadow shadow-gray-400 hover:bg-gray-200 dark:bg-foreground dark:hover:bg-gray-700"
             aria-label="Toggle theme"
           >
-            {resolvedTheme === "dark" ? <FaSun size={20} color="#ffffff" /> : <FaMoon size={20} color="#000000" />}
+            {!mounted ? (
+              <span className="block h-5 w-5" />
+            ) : resolvedTheme === "dark" ? (
+              <FaSun size={20} color="#ffffff" />
+            ) : (
+              <FaMoon size={20} color="#000000" />
+            )}
           </button>
           {isAuthenticated && (
             <button
