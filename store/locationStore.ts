@@ -30,6 +30,7 @@ type LocationState = {
   removeLocation: (id: number) => Promise<void>;
   setCompareMode: (enabled: boolean) => void;
   setCompareSelection: (slot: 0 | 1, id: number | null) => void;
+  upsert: (loc: LocationWeather) => void;
   clearError: () => void;
 };
 
