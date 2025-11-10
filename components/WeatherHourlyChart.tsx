@@ -40,7 +40,7 @@ export default function WeatherHourlyChart({
   const labels = safeSeries[0]?.data?.map((point) => formatLabel(point.time)) ?? [];
 
   const datasets = safeSeries.map((serie, index) => ({
-    label: `${serie.label} A�C`,
+    label: `${serie.label} A°C`,
     data: serie.data?.map((point) => point.temperature) ?? [],
     borderColor: serie.color ?? PALETTE[index % PALETTE.length],
     backgroundColor: 'transparent',
@@ -62,9 +62,9 @@ export default function WeatherHourlyChart({
             const dataset = safeSeries[context.datasetIndex ?? 0];
             const point = dataset?.data?.[context.dataIndex];
             if (!point) return context.formattedValue;
-            return `${dataset.label}: ${point.temperature.toFixed(1)} A�C | dYO ${point.precipitation.toFixed(
+            return `${dataset.label}: ${point.temperature.toFixed(1)} °C | \u00B0C ${point.precipitation.toFixed(
               1,
-            )} mm | dY' ${point.humidity}%`;
+            )} mm | \u00B0C ${point.humidity}%`;
           },
         },
       },
@@ -73,7 +73,7 @@ export default function WeatherHourlyChart({
       y: {
         beginAtZero: false,
         ticks: {
-          callback: (value: number) => `${value}A`,
+          callback: (value: number) => `${value}°`,
         },
         grid: {
           color: 'rgba(148, 163, 184, 0.2)',
