@@ -2,6 +2,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { NextAuthOptions } from "next-auth";
 import NextAuth from "next-auth";
 import jwt from "jsonwebtoken";
+import type { Session } from "next-auth";
 
 type MockUser = {
   id: "user1" | "user2";
@@ -102,7 +103,6 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.username = token.username as string;
       }
       session.accessToken = token.accessToken as string;
       return session;

@@ -78,7 +78,7 @@ export default function WeatherDailyChart({ series }: { series: DailySeries[] })
         beginAtZero: false,
         position: 'left' as const,
         ticks: {
-          callback: (value: number) => `${value}°`,
+          callback:  (value: string | number) => `${Number(value).toFixed(0)}°`,
         },
       },
       yRain: {
@@ -88,7 +88,7 @@ export default function WeatherDailyChart({ series }: { series: DailySeries[] })
           drawOnChartArea: false,
         },
         ticks: {
-          callback: (value: number) => `${value} mm`,
+          callback:  (value: string | number) => `${Number(value).toFixed(0)} mm`,
         },
       },
       x: {

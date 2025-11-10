@@ -73,7 +73,7 @@ export default function WeatherHourlyChart({
       y: {
         beginAtZero: false,
         ticks: {
-          callback: (value: number) => `${value}°`,
+          callback: (value: string | number) => `${value}°`,
         },
         grid: {
           color: 'rgba(148, 163, 184, 0.2)',
