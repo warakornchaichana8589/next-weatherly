@@ -1,248 +1,164 @@
-"use client"
-import { useEffect, useState, useMemo } from "react";
-import { fetcher } from "@/lib/fetcher";
+"use client";
 
-import { LatestResponse, HourlyResponse } from "@/type/weather";
-import { lastNDaysRangeInTZ } from "@/lib/time";
-
+import { useEffect, useMemo } from "react";
+import { useLocationStore } from "@/store/locationStore";
+import WeatherCard from "@/components/WeatherCard";
+import type { LatestResponse, LocationWeather } from "@/type/weather";
 import { toast } from "react-toastify";
 import AOS from "aos";
 import "aos/dist/aos.css";
-import { Line, Bar } from "react-chartjs-2";
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend } from "chart.js";
-import "chart.js/auto";
-import WeatherIcon from "@/components/WeatherIcon";
-import WeatherCardSkeleton from "@/components/Card/WeatherCardSkeleton";
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend);
-type Location = {
-    name: string;
-    lat: number;
-    lon: number;
-    timezone: string;
-};
-// ตัวอย่างค่าเริ่มต้น /locations
-const DEFAULT_LOCATION: Location = {
-    name: "Bangkok",
-    lat: 13.75,
-    lon: 100.5,
-    timezone: "Asia/Bangkok",
-};
-const WEATHER_DESCRIPTIONS: Record<number, string> = {
-    0: "Clear sky",
-    1: "Mainly clear",
-    2: "Partly cloudy",
-    3: "Overcast",
-    45: "Fog",
-    48: "Fog",
-    51: "Light drizzle",
-    53: "Drizzle",
-    55: "Heavy drizzle",
-    61: "Light rain",
-    63: "Rain",
-    65: "Heavy rain",
-    80: "Rain showers",
-    81: "Rain showers",
-    82: "Heavy showers",
-    95: "Thunderstorm",
-    96: "Thunderstorm",
-    99: "Thunderstorm",
-};
-type StatChipProps = {
-    label: string;
-    value: string;
-    helper?: string;
-};
-function StatChip({ label, value, helper }: StatChipProps) {
-    return (
-        <div className="rounded-2xl border border-white/40 bg-white/70 p-4 text-gray-800 shadow-md shadow-gray-200 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/60 dark:text-gray-100">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{label}</p>
-            <p className="text-xl font-semibold">{value}</p>
-            {helper ? <p className="text-[11px] text-gray-500 dark:text-gray-400">{helper}</p> : null}
-        </div>
-    );
+import CitySearchInput from "@/components/CitySearchInput"
+import Link from 'next/link'
+import { createMockLocationWeather } from "@/lib/mockWeather";
+
+function buildMockLatest(loc: LocationWeather): LatestResponse {
+  const temperature = 24 + (loc.lat % 6) + (loc.lon % 4);
+  const windspeed = 2 + (Math.abs(loc.lon) % 5);
+  const weathercode = Math.abs(Math.round(loc.lat + loc.lon + loc.id)) % 4;
+  const humidity = 50 + Math.round((loc.lat + loc.lon) % 50); 
+  const rain = Math.max(0, Math.round((loc.lat + loc.lon) % 10 - 2));
+  return {
+    latitude: loc.lat,
+    longitude: loc.lon,
+    timezone: loc.timezone,
+    current_weather: {
+      temperature: Number(temperature.toFixed(1)),
+      windspeed: Number(windspeed.toFixed(1)),
+      weathercode,
+      humidity,
+      rain,
+      time: new Date().toISOString(),
+    },
+  };
 }
+
 export default function Dashboard() {
-    //location
-    const [loc, setLoc] = useState<Location>(DEFAULT_LOCATION);
-    const [latest, setLatest] = useState<LatestResponse | null>(null);
-    const [hourly, setHourly] = useState<HourlyResponse | null>(null);
+  const selected = useLocationStore((state) => state.selected);
+  const locations = useLocationStore((state) => state.locations);
+  const fetchLocations = useLocationStore((state) => state.fetchLocations);
+  const toggleFollow = useLocationStore((state) => state.toggleFollow);
+  const setSelected = useLocationStore((state) => state.setSelected);
+  const upsert = useLocationStore((state) => state.upsert);
+  const loading = useLocationStore((state) => state.loading);
 
-    const [loading, setLoading] = useState(false);
-    const [err, setErr] = useState<string | null>(null);
-    useEffect(() => {
-        AOS.init({
-            duration: 1200,
-        });
+  useEffect(() => {
+    if (loading || locations.length) return;
+    fetchLocations();
+  }, [fetchLocations, loading, locations.length]);
 
-    }, []);
-    useEffect(() => {
-        let mounted = true;
-        const load = async () => {
-            try {
-                setLoading(true);
-                setErr(null);
-                const { start, end } = lastNDaysRangeInTZ(7, loc.timezone);
-                const [latestRes, hourlyRes] = await Promise.all([
-                    fetcher<LatestResponse>(`/api/weather/latest?lat=${loc.lat}&lon=${loc.lon}&timezone=${loc.timezone}`),
-                    fetcher<HourlyResponse>(`/api/weather/hourly?lat=${loc.lat}&lon=${loc.lon}&from=${start}&to=${end}&timezone=${loc.timezone}&includeWind=1`),
-                ]);
-                // console.log(latestRes)
-                if (!mounted) return;
-                setLatest(latestRes);
-                setHourly(hourlyRes);
-            } catch (e: any) {
-                if (!mounted) return;
-                setErr(e?.message ?? "Failed to load dashboard");
-            } finally {
-                if (mounted) setLoading(false);
-            }
-        };
-        load();
-        return () => {
-            mounted = false;
-        };
-    }, [loc]);
+  useEffect(() => {
+    AOS.init({ duration: 1000 });
+  }, []);
 
-    const latestCard = useMemo(() => {
-        if (!latest || !hourly) return null;
+  const latestMock = useMemo(() => (selected ? buildMockLatest(selected) : null), [selected]);
+  const followedLocations = useMemo(
+    () => locations.filter((loc) => loc.isFollowed),
+    [locations],
+  );
 
-        const { temperature, windspeed, weathercode, time } = latest.current_weather;
-        const latestIdx = time ? hourly.hourly.time.findIndex((t) => t === time) : -1;
-        const fallbackIdx = hourly.hourly.time.length - 1;
-        const idx = latestIdx >= 0 ? latestIdx : fallbackIdx;
-        const humidity = idx >= 0 ? hourly.hourly.relative_humidity_2m[idx] : null;
-        const rain = idx >= 0 ? hourly.hourly.precipitation[idx] : null;
+  if (!selected || !latestMock) {
+    return <p className="p-8 text-sm text-slate-500 text-center">Loading locations...</p>;
+  }
 
-        const conditionLabel = typeof weathercode === "number"
-            ? WEATHER_DESCRIPTIONS[weathercode] ?? `Code ${weathercode}`
-            : "Unknown condition";
+  return (
+    <section className="min-h-screen space-y-8 bg-gray-50 p-8 pt-20 dark:bg-slate-900" data-aos="fade-up">
+      <div className="mx-auto container">
 
-        const formattedTemp = typeof temperature === "number" ? `${temperature.toFixed(1)}°C` : "-";
-        const formattedWind = typeof windspeed === "number" ? `${windspeed.toFixed(1)} m/s` : "-";
-        const formattedHumidity = typeof humidity === "number" ? `${Math.round(humidity)}%` : "-";
-        const formattedRain = typeof rain === "number" ? `${rain.toFixed(1)} mm` : "-";
+        <div className="flex flex-col w-full gap-6">
+          <div className="w-full max-w-4xl mx-auto">
+            <CitySearchInput
+              onSelect={(city) => {
+                                const newLoc = createMockLocationWeather({
+                  id: Date.now(),
+                  name: city.name,
+                  lat: city.lat,
+                  lon: city.lon,
+                  timezone: city.timezone || "Asia/Bangkok",
+                  isFollowed: true,
+                });
+                // ✅ เพิ่มเข้า store และเลือกเป็นเมืองปัจจุบัน
+                upsert(newLoc);
+                setSelected(newLoc);
 
-        const displayTime = time
-            ? new Intl.DateTimeFormat(undefined, {
-                dateStyle: "medium",
-                timeStyle: "short",
-                timeZone: loc.timezone,
-            }).format(new Date(time))
-            : "-";
-        const isDay = (() => {
-            if (!time) return true;
-            const hours = new Date(time).getUTCHours();
-            return hours >= 6 && hours < 18;
-        })();
+                toast.success(`Switched to ${city.name}`);
+              }}
+            />
+          </div>
+          <h1 className="text-xl font-semibold dark:text-white">Overview • {selected.name}</h1>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <WeatherCard latest={latestMock} loc={selected} />
+            <div className=""></div>
+          </div>
+        </div>
 
-        const statItems = [
-            { label: "Humidity", value: formattedHumidity },
-            { label: "Wind", value: formattedWind, helper: "10 m reference" },
-            { label: "Rain (last hr)", value: formattedRain },
-            { label: "Condition", value: conditionLabel },
-        ];
-        if (loading) return (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                <WeatherCardSkeleton />;
+        {followedLocations.length > 0 && (
+          <section className="space-y-3 w-full pt-5 sm:pt-10">
+            <div className="flex flex-col sm:flex-row items-center justify-between w-full">
+              <div className="flex items-center justify-start gap-4 w-full">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Followed cities</h2>
+                <p className="text-xs uppercase tracking-wide text-slate-400">{followedLocations.length} total</p>
+              </div>
+              <div className="flex w-full items-center justify-between sm:justify-end gap-2">
+                <Link
+                  href="/locations"
+                  className="rounded-md bg-slate-700 px-3 py-1 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white"
+                >
+                  Add city
+                </Link>
+                <Link
+                  href="/compare"
+                  className="rounded-md bg-slate-700 px-3 py-1 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white"
+                >
+                  Compare mode
+                </Link>
+              </div>
             </div>
-
-        )
-        return (
-            <div className="w-full" data-aos="fade-up">
-                <div className="
-                            grid
-                            grid-cols-1
-                            md:grid-cols-2
-                            lg:grid-cols-3
-                            2xl:grid-cols-4
-                            gap-6
-                            ">
-
-                    <div className="flex flex-col gap-6 md:items-center aspect-square rounded-3xl border border-white/50 bg-linear-to-br  from-sky-100/90 via-white/80 to-emerald-100/80 p-6 shadow-2xl shadow-sky-100/60 backdrop-blur-md dark:border-slate-800 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-800">
-                        <div className="flex flex-1 items-center gap-4">
-                            <div className="rounded-2xl bg-white/80 p-4 text-sky-600 shadow-inner dark:bg-slate-800/70 dark:text-sky-300">
-                                <WeatherIcon weatherCode={weathercode ?? 0} isDay={isDay} />
-                            </div>
-                            <div>
-                                <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Latest in {loc.name}</p>
-                                <p className="text-4xl font-semibold text-gray-900 dark:text-white">{formattedTemp}</p>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">{conditionLabel} - {displayTime}</p>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            {statItems.map((stat) => (
-                                <StatChip key={stat.label} label={stat.label} value={stat.value} helper={stat.helper} />
-                            ))}
-                        </div>
-
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 text-gray-700">
+              {followedLocations.map((loc) => (
+                <div
+                  key={loc.id}
+                  className="rounded-3xl border border-white/50 bg-gradient-to-br from-sky-100/80 to-emerald-100/80 p-6 shadow-2xl"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-base font-semibold ">{loc.name}</p>
+                      <p className="text-xs ">
+                        {loc.lat.toFixed(2)}, {loc.lon.toFixed(2)}
+                      </p>
                     </div>
-                    <div className="flex flex-col gap-6 md:items-center aspect-square rounded-3xl border border-white/50 bg-linear-to-br  from-sky-100/90 via-white/80 to-emerald-100/80 p-6 shadow-2xl shadow-sky-100/60 backdrop-blur-md dark:border-slate-800 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-800">
-                        <div className="flex flex-1 items-center gap-4">
-                            <div className="rounded-2xl bg-white/80 p-4 text-sky-600 shadow-inner dark:bg-slate-800/70 dark:text-sky-300">
-                                <WeatherIcon weatherCode={weathercode ?? 0} isDay={isDay} />
-                            </div>
-                            <div>
-                                <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Latest in {loc.name}</p>
-                                <p className="text-4xl font-semibold text-gray-900 dark:text-white">{formattedTemp}</p>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">{conditionLabel} - {displayTime}</p>
-                            </div>
-                        </div>
-                        <div className="grid flex-1 grid-cols-2 gap-3 md:grid-cols-4">
-                            {statItems.map((stat) => (
-                                <StatChip key={stat.label} label={stat.label} value={stat.value} helper={stat.helper} />
-                            ))}
-                        </div>
-
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href="/locations#compare"
+                        className="rounded-full border px-3 py-1 text-xs font-semibold hover:border-slate-500 border-slate-600 "
+                      >
+                        View
+                      </Link>
+                      <button
+                        onClick={() => {
+                          toggleFollow(loc.id, !loc.isFollowed);
+                          toast.info(`${loc.isFollowed ? "Unfollowed" : "Followed"} ${loc.name}`);
+                        }}
+                        className="rounded-full border border-slate-600  hover:border-white/5 px-3 py-1 text-xs hover:bg-red-400"
+                      >
+                        {loc.isFollowed ? "Unfollower" : "Follow"}
+                      </button>
                     </div>
-                    <div className="flex flex-col gap-6 md:items-center aspect-square rounded-3xl border border-white/50 bg-linear-to-br  from-sky-100/90 via-white/80 to-emerald-100/80 p-6 shadow-2xl shadow-sky-100/60 backdrop-blur-md dark:border-slate-800 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-800">
-                        <div className="flex flex-1 items-center gap-4">
-                            <div className="rounded-2xl bg-white/80 p-4 text-sky-600 shadow-inner dark:bg-slate-800/70 dark:text-sky-300">
-                                <WeatherIcon weatherCode={weathercode ?? 0} isDay={isDay} />
-                            </div>
-                            <div>
-                                <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Latest in {loc.name}</p>
-                                <p className="text-4xl font-semibold text-gray-900 dark:text-white">{formattedTemp}</p>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">{conditionLabel} - {displayTime}</p>
-                            </div>
-                        </div>
-                        <div className="grid flex-1 grid-cols-2 gap-3 md:grid-cols-4">
-                            {statItems.map((stat) => (
-                                <StatChip key={stat.label} label={stat.label} value={stat.value} helper={stat.helper} />
-                            ))}
-                        </div>
-
-                    </div>
-                    <div className="flex flex-col gap-6 md:items-center aspect-square rounded-3xl border border-white/50 bg-linear-to-br  from-sky-100/90 via-white/80 to-emerald-100/80 p-6 shadow-2xl shadow-sky-100/60 backdrop-blur-md dark:border-slate-800 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-800">
-                        <div className="flex flex-1 items-center gap-4">
-                            <div className="rounded-2xl bg-white/80 p-4 text-sky-600 shadow-inner dark:bg-slate-800/70 dark:text-sky-300">
-                                <WeatherIcon weatherCode={weathercode ?? 0} isDay={isDay} />
-                            </div>
-                            <div>
-                                <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Latest in {loc.name}</p>
-                                <p className="text-4xl font-semibold text-gray-900 dark:text-white">{formattedTemp}</p>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">{conditionLabel} - {displayTime}</p>
-                            </div>
-                        </div>
-                        <div className="grid flex-1 grid-cols-2 gap-3 md:grid-cols-4">
-                            {statItems.map((stat) => (
-                                <StatChip key={stat.label} label={stat.label} value={stat.value} helper={stat.helper} />
-                            ))}
-                        </div>
-
-                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
+                    <span>{loc.timezone}</span>
+                    <span>{buildMockLatest(loc).current_weather.temperature.toFixed(1)}°C</span>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Updated {new Date(loc.lastUpdated).toLocaleDateString()}
+                  </p>
                 </div>
+              ))}
             </div>
-        );
-    }, [hourly, latest, loc]);
+          </section>
+        )}
+      </div>
 
-    return (
-        <section className="min-h-screen bg-dark-white-text pt-20" data-aos="fade-up">
-            <div className="container p-5 mx-auto w-full space-y-6">
-                {loading && <div className="text-sm opacity-70">Loading weather…</div>}
-                {err && <div className="text-sm text-red-600">Error: {err}</div>}
-                {latestCard}
-            </div>
-        </section>
-    )
+    </section>
+  );
+}
 
-};

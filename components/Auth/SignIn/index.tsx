@@ -1,12 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import AuthGuard from "./AuthGuard"
 import { toast } from "react-toastify";
 import Image from "next/image";
 import { useTheme } from "next-themes";
 import { ShimmerButton } from "@/components/ui/shimmer-button"
+import { useAuthStore } from "@/store/authStore"
+
 export default function SignIn() {
     const { theme, setTheme } = useTheme();
     const router = useRouter();
@@ -34,6 +36,12 @@ export default function SignIn() {
             setTimeout(() => setCooldown(false), 3000);
             return;
         } else {
+            const session = await getSession();
+            const token = session?.accessToken;
+            if (token) {
+                useAuthStore.getState().setToken(token);
+                console.log("✅ Token stored in Zustand:", token);
+            }
             toast.success("เข้าสู่ระบบสำเร็จ!", { position: "top-center" });
             setLoading(false);
             router.push("/dashboard");
@@ -53,7 +61,7 @@ export default function SignIn() {
                                     height={80}
                                     className="object-contain"
                                 />
-                                <span className="text-gray-900 dark:text-white text-xl -mt-6"><span className="text-5xl">W</span>eathweApp</span>
+                                <span className="text-gray-900 font-bold dark:text-white text-xl -mt-6"><span className="text-5xl">W</span>eathweHub</span>
                             </div>
                             <div className="mt-4 sm:mt-8 sm:mx-auto sm:w-full sm:max-w-sm">
                                 <h2 className="text-center text-2xl/9 font-bold tracking-tight text-gray-900 dark:text-white">Sign in</h2>
@@ -99,6 +107,12 @@ export default function SignIn() {
 
                                     </div>
                                 </form>
+                                <span className="text-center mt-5 text-sm text-slate-600 dark:text-slate-50">
+                                    username : test <br/>
+                                    password : 1234 <br/>
+                                    ใช้เพื่อทดสอบ
+                                    </span>
+                                
                             </div>
                         </div>
 

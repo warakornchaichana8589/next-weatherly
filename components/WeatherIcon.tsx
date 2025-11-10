@@ -9,33 +9,15 @@ import {
     Moon,
 } from "lucide-react";
 
+import { WEATHER_GROUPS } from "@/lib/weather"
 
 type Props = {
     weatherCode: number,
     isDay?: boolean,
 }
-const weatherGroups: Record<number, string> = {
-    0: "clear",
-    1: "clear",
-    2: "partly-cloudy",
-    3: "cloudy",
-    45: "fog",
-    48: "fog",
-    51: "drizzle",
-    53: "drizzle",
-    55: "drizzle",
-    61: "rain",
-    63: "rain",
-    65: "rain",
-    80: "rain-showers",
-    81: "rain-showers",
-    82: "rain-showers",
-    95: "thunderstorm",
-    96: "thunderstorm",
-    99: "thunderstorm",
-};
+
 function WeatherIcon({ weatherCode, isDay }: Props) {
-    const type = weatherGroups[weatherCode] || "unknown";
+    const type = WEATHER_GROUPS[weatherCode] || "unknown";
     switch (type) {
         case "clear":
             return isDay ? <Sun /> : <Moon />;

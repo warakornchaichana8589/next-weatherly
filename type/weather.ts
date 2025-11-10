@@ -4,12 +4,16 @@ export type CurrentWeather = {
     winddirection?: number;
     weathercode?: number;
     time: string;
+    humidity?: number;
+    rain?: number;
+    
 };
 export type LatestResponse = {
     latitude: number;
     longitude: number;
     timezone: string;
     current_weather: CurrentWeather;
+
 };
 export type HourlyResponse = {
   latitude: number;
@@ -37,4 +41,34 @@ export type DailyAggregate = {
   temp_max: number | null;
   rain_total_mm: number;  // sum
   wind_max_ms: number | null;
+};
+
+export type LocationType = {
+    id: number | null;
+    name: string;
+    lat: number;
+    lon: number;
+    timezone: string;
+    isFollowed: boolean;
+};
+
+export type HourlyPoint = {
+  time: string;
+  temperature: number;
+  precipitation: number;
+  humidity: number;
+};
+
+export type DailyPoint = {
+  date: string;
+  tempMax: number;
+  tempMin: number;
+  rain: number;
+};
+
+export type LocationWeather = LocationType & {
+  id: number;
+  hourly: HourlyPoint[];
+  daily: DailyPoint[];
+  lastUpdated: string;
 };

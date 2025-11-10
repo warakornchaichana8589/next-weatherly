@@ -4,11 +4,21 @@ export interface FetcherOptions extends RequestInit {
     useAuth?: boolean;
     signal?: AbortSignal;
 }
+const pendingRequests = new Map<string, AbortController>();
 export async function fetcher<T>(
     url: string,
     options: FetcherOptions = {}
 ): Promise<T> {
+
+    // retry
+    const key = `${options.method || "GET"}:${url}`;
+    if (pendingRequests.has(key)) {
+        console.warn("Duplicate request blocked:", key);
+        throw new Error("Duplicate request blocked");
+    }
+
     const controller = new AbortController();
+    pendingRequests.set(key, controller);
     const signal = options.signal || controller.signal;
     try {
         const headers: Record<string, string> = {
@@ -32,13 +42,15 @@ export async function fetcher<T>(
         }
         const data = (await response.json()) as T;
         return data;
-    } catch (error: any) {
-        if (error.name === "AbortError") {
+    } catch (error: unknown) {
+        if (error instanceof DOMException && error.name === "AbortError") {
             console.warn("Fetch aborted:", url);
             throw new Error("Request was aborted");
         }
 
         console.error("Fetcher error:", error);
         throw error;
+    } finally {
+        pendingRequests.delete(key);
     }
 }

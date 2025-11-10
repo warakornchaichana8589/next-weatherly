@@ -9,8 +9,8 @@ import "react-toastify/dist/ReactToastify.css";
 import ThemeAwareToaster from "@/components/ThemeAwareToaster";
 
 export const metadata: Metadata = {
-  title: "WeatherApp",
-  description: "WeatherApp",
+  title: "WeatherHub",
+  description: "WeatherHub",
 };
 
 export default function RootLayout({ children }: {
