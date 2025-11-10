@@ -10,7 +10,8 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+import type { ChartData, ChartDataset, ChartOptions } from 'chart.js';
+import { Chart } from 'react-chartjs-2';
 import type { DailyPoint } from '@/type/weather';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend);
@@ -22,17 +23,19 @@ type DailySeries = {
 };
 
 const PALETTE = ['#0ea5e9', '#f97316', '#22c55e', '#ec4899'];
+type MixedChartType = 'bar' | 'line';
 
 export default function WeatherDailyChart({ series }: { series: DailySeries[] }) {
   const safeSeries = Array.isArray(series) ? series : [];
   const labels = safeSeries[0]?.data?.map((point) => point.date) ?? [];
 
-  const datasets = safeSeries.flatMap((serie, index) => {
-    const color = serie.color ?? PALETTE[index % PALETTE.length];
-    const baseLabel = serie.label;
-    return [
-      {
-        type: 'bar' as const,
+  const datasets: ChartDataset<MixedChartType, number[]>[] = safeSeries.flatMap(
+    (serie, index) => {
+      const color = serie.color ?? PALETTE[index % PALETTE.length];
+      const baseLabel = serie.label;
+      return [
+        {
+          type: 'bar' as const,
         label: `${baseLabel} (max)`,
         data: serie.data?.map((point) => point.tempMax) ?? [],
         backgroundColor: color,
@@ -55,11 +58,14 @@ export default function WeatherDailyChart({ series }: { series: DailySeries[] })
         backgroundColor: color,
         yAxisID: 'yRain',
         tension: 0.3,
-      },
-    ];
-  });
+        },
+      ];
+    },
+  );
 
-  const options = {
+  const data: ChartData<MixedChartType, number[]> = { labels, datasets };
+
+  const options: ChartOptions<MixedChartType> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -102,7 +108,7 @@ export default function WeatherDailyChart({ series }: { series: DailySeries[] })
         </p>
       </div>
       <div className="h-80">
-        <Bar data={{ labels, datasets }} options={options} />
+        <Chart type="bar" data={data} options={options} />
       </div>
     </div>
   );
