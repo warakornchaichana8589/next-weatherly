@@ -1,6 +1,39 @@
 ## Frontend Weatherly
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+แดชบอร์ดอากาศ (App Router) + Tailwind CSS + Zustand + NextAuth
+กราฟจาก Chart.js
+แผนที่ Leaflet
+
+## คุณสมบัติหลัก
+- 📊 Dashboard, Locations, Compare (multi-page) ผูกกับ Zustand store
+- 🔐 NextAuth (credentials) mock login + token refresh helper
+- 🌗 Theme toggle ด้วย `next-themes` รองรับ system preference
+- 🌤️ กราฟสภาพอากาศ (Hourly/Daily) ผ่าน react-chartjs-2
+- 🗺️ เลือกพิกัดเมืองด้วย Leaflet (MapPicker)
+- 💾 IndexedDB caching + offline fallback (lib/db.ts + lib/weather.ts)
+- 🔁 API `/api/locations` ให้ mock city data + follow/unfollow/delete
+
+## โครงสร้างสำคัญหลักๆ
+```
+app/
+  (site)/dashboard/page.tsx    # หน้า Overview
+  (site)/locations/page.tsx    # จัดการเมือง + compare mode
+  (site)/compare/page.tsx      # เปรียบเทียบ 2 เมือง
+components/
+  WeatherCard.tsx
+  WeatherHourlyChart.tsx
+  WeatherDailyChart.tsx
+  CitySearchInput.tsx
+  MapPicker.tsx
+  Header.tsx / Footer.tsx
+lib/
+  weather.ts / fetcher.ts / locations.ts
+  mockWeather.ts              # สร้าง hourly/daily mock
+store/
+  locationStore.ts            # Zustand state + actions
+utils/
+  auth.ts / themeProviders.ts
+```
 
 ## Getting Started
 
