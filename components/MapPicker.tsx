@@ -11,7 +11,7 @@ export type MapPickerProps = {
   className?: string;
 };
 
-const MapPicker = dynamic<ComponentType<MapPickerProps>>(
+const MapPicker = dynamic<MapPickerProps>(
   async () => {
     const { MapContainer, TileLayer, Marker, useMapEvents, useMap } = await import('react-leaflet');
     const L = await import('leaflet');
@@ -46,7 +46,7 @@ const MapPicker = dynamic<ComponentType<MapPickerProps>>(
       return null;
     }
 
-    const LeafletMap = ({ value, onChange, className }: MapPickerProps) => {
+    const LeafletMap: ComponentType<MapPickerProps> = ({ value, onChange, className }) => {
       const center = useMemo(
         () => [value?.lat ?? 13.7563, value?.lon ?? 100.5018] as [number, number],
         [value],
