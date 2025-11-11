@@ -144,7 +144,7 @@ export default function Dashboard() {
                       </button>
                     </div>
                   </div>
-                  <div className="mt-3 flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
+                  <div className="mt-3 flex items-center justify-between text-sm text-slate-600 dark:text-slate-500">
                     <span>{loc.timezone}</span>
                     <span>{buildMockLatest(loc).current_weather.temperature.toFixed(1)}°C</span>
                   </div>
