@@ -35,6 +35,7 @@ const FALLBACK_USER = MOCK_USERS[0];
 
 function issueMockAccessToken(payload: { id: string; username: string }) {
   return jwt.sign(payload, NEXTAUTH_SECRET, { expiresIn: "1h" });
+  
 }
 
 function ensureTokenShape(token: Record<string, unknown>) {

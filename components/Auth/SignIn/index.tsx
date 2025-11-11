@@ -40,7 +40,7 @@ export default function SignIn() {
             const token = session?.accessToken;
             if (token) {
                 useAuthStore.getState().setToken(token);
-                console.log("✅ Token stored in Zustand:", token);
+                // console.log("✅ Token stored in Zustand:", token);
             }
             toast.success("เข้าสู่ระบบสำเร็จ!", { position: "top-center" });
             setLoading(false);
