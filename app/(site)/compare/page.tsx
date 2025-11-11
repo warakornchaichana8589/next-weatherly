@@ -71,7 +71,7 @@ export default function ComparePage() {
 
 
   return (
-    <section className=" bg-white dark:bg-gray-900">
+    <section className=" bg-white dark:bg-gray-900 min-h-screen">
       <div className="w-full container mx-auto pt-20 flex flex-col gap-8 px-4 py-8">
         <div className="w-full flex flex-wrap gap-4 justify-end mt-2">
                 <Link
