@@ -57,7 +57,7 @@ export default function Header() {
           
           <button
             onClick={handleThemeToggle}
-            className="rounded-full bg-background p-2 shadow shadow-gray-400 hover:bg-gray-200 dark:bg-foreground dark:hover:bg-gray-700"
+            className="rounded-full cursor-pointer bg-background p-2 shadow shadow-gray-400 hover:bg-gray-200 dark:bg-foreground dark:hover:bg-gray-700"
             aria-label="Toggle theme"
           >
             {!mounted ? (

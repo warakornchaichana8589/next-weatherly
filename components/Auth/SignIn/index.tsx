@@ -16,6 +16,7 @@ export default function SignIn() {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [cooldown, setCooldown] = useState(false);
+ 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         if (cooldown) return toast.warn("กรุณารอสักครู่ก่อนลองใหม่");
@@ -67,7 +68,7 @@ export default function SignIn() {
                                 <h2 className="text-center text-2xl/9 font-bold tracking-tight text-gray-900 dark:text-white">Sign in</h2>
                             </div>
                             <div className="mt-4 sm:mt-8 sm:mx-auto sm:w-full sm:max-w-sm h-full flex flex-col justify-between">
-                                <form onSubmit={handleLogin} className="flex flex-col items-center">
+                                <form  className="flex flex-col items-center">
                                     <div className="mb-[22px]">
                                         <input
                                             type="text"
@@ -92,27 +93,26 @@ export default function SignIn() {
                                         />
                                     </div>
                                     <div className="w-full flex">
-                                        <button
+                                        <ShimmerButton
+                                            onClick={handleLogin}
                                             disabled={loading}
-                                            type="submit"
+                                            background={theme === "dark" ? "#595959" : "#E3E3E3"}
+                                            shimmerColor="#FFF59E"
                                             className="cursor-pointer mx-auto"
                                         >
-                                            <ShimmerButton background={theme === "dark" ? "#595959" : "#E3E3E3"} shimmerColor="#FFF59E">
-                                                <div className="flex items-center w-full">
-                                                    <span className="text-gray-900 text-sm">Login</span>
-                                                </div>
-
-                                            </ShimmerButton>
-                                        </button>
+                                            <div className="flex items-center w-full">
+                                                <span className="text-gray-900 text-sm">Login</span>
+                                            </div>
+                                        </ShimmerButton>
 
                                     </div>
                                 </form>
                                 <span className="text-center mt-5 text-sm text-slate-600 dark:text-slate-50">
-                                    username : test <br/>
-                                    password : 1234 <br/>
+                                    username : test <br />
+                                    password : 1234 <br />
                                     ใช้เพื่อทดสอบ
-                                    </span>
-                                
+                                </span>
+
                             </div>
                         </div>
 
