@@ -6,7 +6,7 @@ import { devtools, persist } from "zustand/middleware";
 import type { LocationWeather } from "@/type/weather";
 import getLocations from "@/lib/locations";
 import { fetcher } from "@/lib/fetcher";
-
+import { toast } from "react-toastify";
 export type NewLocationPayload = {
   name: string;
   lat: number;
@@ -144,6 +144,7 @@ export const useLocationStore = create<LocationState>()(
             method: "DELETE",
             useAuth: true,
           });
+          toast.success("ลบ location สำเร็จแล้ว");
           set((state) => {
             const nextLocations = state.locations.filter((loc) => loc.id !== id);
             return {
