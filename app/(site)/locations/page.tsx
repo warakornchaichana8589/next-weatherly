@@ -86,7 +86,7 @@ export default function LocationsPage() {
               {loc.lat.toFixed(2)}, {loc.lon.toFixed(2)} • {loc.timezone}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center flex-wrap justify-center gap-2">
             <button
               onClick={() => {
                 setSelectedById(loc.id);
