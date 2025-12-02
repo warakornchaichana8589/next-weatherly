@@ -92,7 +92,7 @@ export default function Dashboard() {
                   name: city.name,
                   lat: city.lat,
                   lon: city.lon,
-                  timezone: city.timezone || "Asia/Bangkok",
+                  timezone: city.timezone,
                   isFollowed: true,
                 });
                 // ✅ เพิ่มเข้า store และเลือกเป็นเมืองปัจจุบัน

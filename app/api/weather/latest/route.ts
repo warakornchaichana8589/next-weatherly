@@ -6,7 +6,7 @@ export async function GET(req: Request) {
   const lon = searchParams.get("lon") || "100.5";
   const timezone = searchParams.get("timezone") || "Asia/Bangkok";
 
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=${timezone}`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`;
 
   try {
     const res = await fetch(url, { next: { revalidate: 300 } }); // ✅ cache 5 นาที
