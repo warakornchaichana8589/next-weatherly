@@ -52,13 +52,23 @@ export default function LocationsPage() {
         signal,
         headers: {
           Accept: "application/json",
-          "User-Agent": "weatherly-app/1.0 (contact: youremail@example.com)",
+          "User-Agent": "WeatherHub/1.0 (contact: warakornchaichana@gmail.com)",
         },
       },
     );
 
     if (!res.ok) throw new Error("Reverse geocode failed");
     return res.json();
+  }
+  async function fetchTimezone(lat: number, lon: number, signal?: AbortSignal) {
+    const res = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`,
+      { signal },
+    );
+    if (!res.ok) throw new Error("Fetch timezone failed");
+    const data = await res.json()
+    
+    return data;
   }
 
   useEffect(() => {
@@ -83,7 +93,7 @@ export default function LocationsPage() {
       realName: formState.realName.trim(),
       lat: Number(formState.lat),
       lon: Number(formState.lon),
-      timezone: formState.timezone.trim(),
+      timezone: formState.timezone,
     };
     if (!payload.name || Number.isNaN(payload.lat) || Number.isNaN(payload.lon)) {
       return;
@@ -211,10 +221,10 @@ export default function LocationsPage() {
 
             <MapPicker
               className="mt-4"
-              value={{ lat: formState.lat, lon: formState.lon }}
+              value={{ lat: formState.lat, lon: formState.lon}}
               onChange={(coords) => {
                 setFormState((prev) => ({ ...prev, ...coords }));
-
+               
                 if (debounceRef.current) {
                   clearTimeout(debounceRef.current);
                 }
@@ -226,7 +236,12 @@ export default function LocationsPage() {
                 abortRef.current = controller;
                 debounceRef.current = setTimeout(async () => {
                   try {
-                    const data = await reverseGeocode(coords.lat, coords.lon, controller.signal);
+                    const [geoRes, tzRes] = await Promise.allSettled([
+                      reverseGeocode(coords.lat, coords.lon, controller.signal),
+                      fetchTimezone(coords.lat, coords.lon, controller.signal),
+                    ]);
+                    const data = geoRes.status === "fulfilled" ? geoRes.value : null;
+                    const tzData = tzRes.status === "fulfilled" ? tzRes.value : null;
                     const address = data?.address || {};
                     const resolvedName =
                       address.city ||
@@ -238,6 +253,7 @@ export default function LocationsPage() {
                       data?.namedetails?.name ||
                       data?.display_name?.split(",")[0]?.trim();
                     const resolvedTz =
+                      tzData?.timezone ||
                       data?.addresstags?.timezone ||
                       data?.namedetails?.timezone ||
                       data?.extratags?.timezone ||

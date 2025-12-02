@@ -7,7 +7,7 @@ import 'leaflet/dist/leaflet.css';
 
 export type MapPickerProps = {
   value?: { lat: number; lon: number };
-  onChange?: (coords: { lat: number; lon: number }) => void;
+  onChange?: (coords: { lat: number; lon: number}) => void;
   className?: string;
 };
 
