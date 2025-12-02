@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import WeatherHourlyChart from "@/components/WeatherHourlyChart";
 import WeatherDailyChart from "@/components/WeatherDailyChart";
@@ -14,6 +14,7 @@ import { createMockLocationWeather } from "@/lib/mockWeather";
 
 const DEFAULT_FORM = {
   name: "Chiang Mai",
+  realName: "Chiang Mai",
   lat: 18.7883,
   lon: 98.9853,
   timezone: "Asia/Bangkok",
@@ -40,6 +41,25 @@ export default function LocationsPage() {
   const upsert = useLocationStore((state) => state.upsert);
   const [formState, setFormState] = useState(DEFAULT_FORM);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const nameEditedRef = useRef(false);
+  const timezoneEditedRef = useRef(false);
+  async function reverseGeocode(lat: number, lon: number, signal?: AbortSignal) {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&addressdetails=1&extratags=1&namedetails=1`,
+      {
+        signal,
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "weatherly-app/1.0 (contact: youremail@example.com)",
+        },
+      },
+    );
+
+    if (!res.ok) throw new Error("Reverse geocode failed");
+    return res.json();
+  }
 
   useEffect(() => {
     if (loading || locations.length) return;
@@ -60,6 +80,7 @@ export default function LocationsPage() {
     event.preventDefault();
     const payload = {
       name: formState.name.trim(),
+      realName: formState.realName.trim(),
       lat: Number(formState.lat),
       lon: Number(formState.lon),
       timezone: formState.timezone.trim(),
@@ -171,14 +192,14 @@ export default function LocationsPage() {
             <div className="my-2">
               <CitySearchInput
                 onSelect={(city) => {
-                                  const newLoc = createMockLocationWeather({
-                  id: Date.now(),
-                  name: city.name,
-                  lat: city.lat,
-                  lon: city.lon,
-                  timezone: city.timezone || "Asia/Bangkok",
-                  isFollowed: true,
-                });
+                  const newLoc = createMockLocationWeather({
+                    id: Date.now(),
+                    name: city.name,
+                    lat: city.lat,
+                    lon: city.lon,
+                    timezone: city.timezone || "Asia/Bangkok",
+                    isFollowed: true,
+                  });
 
                   upsert(newLoc);
                   setSelected(newLoc);
@@ -191,7 +212,57 @@ export default function LocationsPage() {
             <MapPicker
               className="mt-4"
               value={{ lat: formState.lat, lon: formState.lon }}
-              onChange={(coords) => setFormState((prev) => ({ ...prev, ...coords }))}
+              onChange={(coords) => {
+                setFormState((prev) => ({ ...prev, ...coords }));
+
+                if (debounceRef.current) {
+                  clearTimeout(debounceRef.current);
+                }
+                if (abortRef.current) {
+                  abortRef.current.abort();
+                }
+
+                const controller = new AbortController();
+                abortRef.current = controller;
+                debounceRef.current = setTimeout(async () => {
+                  try {
+                    const data = await reverseGeocode(coords.lat, coords.lon, controller.signal);
+                    const address = data?.address || {};
+                    const resolvedName =
+                      address.city ||
+                      address.town ||
+                      address.village ||
+                      address.hamlet ||
+                      address.county ||
+                      address.state ||
+                      data?.namedetails?.name ||
+                      data?.display_name?.split(",")[0]?.trim();
+                    const resolvedTz =
+                      data?.addresstags?.timezone ||
+                      data?.namedetails?.timezone ||
+                      data?.extratags?.timezone ||
+                      formState.timezone;
+
+                    setFormState((prev) => ({
+                      ...prev,
+                      name:
+                        !nameEditedRef.current ||
+                        prev.name === prev.realName ||
+                        prev.name === DEFAULT_FORM.name
+                          ? resolvedName || prev.name
+                          : prev.name,
+                      realName: resolvedName || prev.realName,
+                      timezone:
+                        !timezoneEditedRef.current || prev.timezone === DEFAULT_FORM.timezone
+                          ? resolvedTz || prev.timezone
+                          : prev.timezone,
+                    }));
+                  } catch (error: unknown) {
+                    if (error instanceof DOMException && error.name === "AbortError") return;
+                    console.warn("Reverse geocode failed:", error);
+                  }
+                }, 400);
+              }}
             />
             <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
               <div>
@@ -201,8 +272,18 @@ export default function LocationsPage() {
                 <input
                   required
                   value={formState.name}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, name: event.target.value }))}
+                  placeholder={formState.realName}
+                  onChange={(event) => {
+                    nameEditedRef.current = true;
+                    setFormState((prev) => ({ ...prev, name: event.target.value }));
+                  }}
                   className="mt-1 w-full rounded-lg border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+                <input
+                  hidden
+                  value={formState.realName}
+                  onChange={(event) => setFormState((prev) => ({ ...prev, realName: event.target.value }))}
+
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -244,9 +325,10 @@ export default function LocationsPage() {
                 <input
                   required
                   value={formState.timezone}
-                  onChange={(event) =>
-                    setFormState((prev) => ({ ...prev, timezone: event.target.value }))
-                  }
+                  onChange={(event) => {
+                    timezoneEditedRef.current = true;
+                    setFormState((prev) => ({ ...prev, timezone: event.target.value }));
+                  }}
                   className="mt-1 w-full rounded-lg border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
               </div>
@@ -388,4 +470,3 @@ export default function LocationsPage() {
     </section>
   );
 }
-

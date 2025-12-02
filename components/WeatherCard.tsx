@@ -1,9 +1,17 @@
 "use client";
 import WeatherIcon from "@/components/WeatherIcon";
+import WeatherCardSkeleton from "@/components/Card/WeatherCardSkeleton";
 import { LocationType, LatestResponse } from "@/type/weather";
 import { WEATHER_GROUPS } from "@/lib/weather"
 
-export default function WeatherCard({ latest, loc }: { latest: LatestResponse; loc: LocationType }) {
+type Props = {
+  latest: LatestResponse | null;   
+  loc: LocationType | undefined;  
+  loading: boolean;
+};
+export default function WeatherCard({ latest, loc, loading }: Props) {
+   if (loading) return <WeatherCardSkeleton />;
+   if (!latest || !loc || !latest.current_weather?.time) return <WeatherCardSkeleton />;
   function formatWeatherTime(isoString: string, timezone: string) {
     const safeZone = timezone && timezone !== "Unknown" ? timezone : "Asia/Bangkok";
     const date = new Date(isoString);
@@ -18,14 +26,12 @@ export default function WeatherCard({ latest, loc }: { latest: LatestResponse; l
   }
 
   const { temperature, weathercode, windspeed, humidity, rain } = latest.current_weather;
-
-
   if (!latest?.current_weather?.time) return null;
   const displayTime = formatWeatherTime(
     latest.current_weather.time,
     latest.timezone
   );
-  console.log(latest)
+ 
   return (
     <div className="rounded-3xl border border-white/50 bg-gradient-to-br from-sky-100/90 via-white/80 to-emerald-100/80 p-6 shadow-2xl">
       <div className="flex items-center gap-4">

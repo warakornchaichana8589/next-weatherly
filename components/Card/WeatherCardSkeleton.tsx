@@ -1,6 +1,6 @@
 export default function WeatherCardSkeleton() {
      return (
-    <div className="flex flex-col gap-6 md:items-center aspect-square rounded-3xl border border-white/50 bg-linear-to-br from-sky-100/90 via-white/80 to-emerald-100/80 p-6 shadow-2xl shadow-sky-100/60 backdrop-blur-md dark:border-slate-800 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-800 animate-pulse">
+    <div className="flex flex-col gap-6 md:items-center aspect-3/1 rounded-3xl border border-white/50 bg-linear-to-br from-sky-100/90 via-white/80 to-emerald-100/80 p-6 shadow-2xl shadow-sky-100/60 backdrop-blur-md dark:border-slate-800 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-800 animate-pulse">
       
      
       <div className="flex flex-1 items-center gap-4 w-full">

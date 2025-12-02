@@ -3,9 +3,10 @@
 
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
-import type { LocationWeather } from "@/type/weather";
+import type { LocationWeather, LatestResponse  } from "@/type/weather";
 import getLocations from "@/lib/locations";
 import { fetcher } from "@/lib/fetcher";
+import { createMockLocationWeather } from "@/lib/mockWeather";
 import { toast } from "react-toastify";
 export type NewLocationPayload = {
   name: string;
@@ -18,6 +19,8 @@ type LocationState = {
   locations: LocationWeather[];
   selected?: LocationWeather;
   loading: boolean;
+  latest?: LatestResponse | null;
+  latestLoading: boolean;
   error: string | null;
   compareMode: boolean;
   compareSelection: [number | null, number | null];
@@ -32,7 +35,17 @@ type LocationState = {
   setCompareSelection: (slot: 0 | 1, id: number | null) => void;
   upsert: (loc: LocationWeather) => void;
   clearError: () => void;
+  fetchLatestForSelected: () => Promise<void>;
 };
+
+const defaultChiangMai = createMockLocationWeather({
+  id: -1,
+  name: "Chiang Mai",
+  lat: 18.7883,
+  lon: 98.9853,
+  timezone: "Asia/Bangkok",
+  isFollowed: true,
+});
 
 function reconcileSelected(
   incoming: LocationWeather[],
@@ -57,27 +70,35 @@ function reconcileCompareSelection(
 export const useLocationStore = create<LocationState>()(
   persist(
     devtools((set, get) => ({
-      locations: [],
-      selected: undefined,
+      locations: [defaultChiangMai],
+      selected: defaultChiangMai,
       loading: false,
       error: null,
       compareMode: false,
       compareSelection: [null, null],
+      latest: null,
+      latestLoading: false,
 
       async fetchLocations() {
         set({ loading: true, error: null });
         try {
           const res = await getLocations();
-          const list = Array.isArray(res.locations) ? res.locations : [];
+          let list = Array.isArray(res.locations) ? res.locations : [];
+          if (!list.length) list = [defaultChiangMai];
           set((state) => ({
             locations: list,
-            selected: reconcileSelected(list, state.selected),
+            selected: reconcileSelected(list, state.selected) ?? defaultChiangMai,
             compareSelection: reconcileCompareSelection(state.compareSelection, list),
             loading: false,
           }));
         } catch (error: unknown) {
           const message = error instanceof Error ? error.message : "Failed to load locations";
-          set({ error: message, loading: false });
+          set({
+            error: message,
+            loading: false,
+            locations: [defaultChiangMai],
+            selected: defaultChiangMai,
+          });
         }
       },
 
@@ -102,14 +123,40 @@ export const useLocationStore = create<LocationState>()(
           set({ error: message, loading: false });
         }
       },
+      async fetchLatestForSelected() {
+        const sel = get().selected;
+        if (!sel) {
+          set({ latest: null });
+          return;
+        }
 
+        set({ latestLoading: true });
+
+        try {
+          const data = await fetcher<LatestResponse>(
+            `/api/weather/latest?lat=${sel.lat}&lon=${sel.lon}&timezone=${sel.timezone}`
+          );
+
+          set({ latest: data, latestLoading: false });
+        } catch (err) {
+          // ถ้าอยาก fallback เป็น mock ก็ทำได้
+          // const mock = buildMockLatest(sel);
+          // set({ latest: mock, latestLoading: false });
+
+          set({ latest: null, latestLoading: false });
+        }
+      },
       setSelectedById(id) {
         const loc = get().locations.find((l) => l.id === id);
-        if (loc) set({ selected: loc });
+        if (loc) {
+          set({ selected: loc });
+          get().fetchLatestForSelected();
+        }
       },
 
       setSelected(loc) {
         set({ selected: loc });
+        get().fetchLatestForSelected();
       },
 
       async toggleFollow(id, next) {
@@ -187,12 +234,12 @@ export const useLocationStore = create<LocationState>()(
           );
 
           if (existingIndex !== -1) {
-           
+
             const updated = [...state.locations];
             updated[existingIndex] = { ...updated[existingIndex], ...loc };
             return { locations: updated };
           } else {
-          
+
             return { locations: [...state.locations, loc] };
           }
         });

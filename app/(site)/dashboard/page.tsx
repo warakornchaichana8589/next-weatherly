@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useLocationStore } from "@/store/locationStore";
 import WeatherCard from "@/components/WeatherCard";
 import type { LatestResponse, LocationWeather } from "@/type/weather";
@@ -10,12 +10,15 @@ import "aos/dist/aos.css";
 import CitySearchInput from "@/components/CitySearchInput"
 import Link from 'next/link'
 import { createMockLocationWeather } from "@/lib/mockWeather";
+import { useRouter } from "next/navigation";
+
 
 function buildMockLatest(loc: LocationWeather): LatestResponse {
+
   const temperature = 24 + (loc.lat % 6) + (loc.lon % 4);
   const windspeed = 2 + (Math.abs(loc.lon) % 5);
   const weathercode = Math.abs(Math.round(loc.lat + loc.lon + loc.id)) % 4;
-  const humidity = 50 + Math.round((loc.lat + loc.lon) % 50); 
+  const humidity = 50 + Math.round((loc.lat + loc.lon) % 50);
   const rain = Math.max(0, Math.round((loc.lat + loc.lon) % 10 - 2));
   return {
     latitude: loc.lat,
@@ -40,9 +43,18 @@ export default function Dashboard() {
   const setSelected = useLocationStore((state) => state.setSelected);
   const upsert = useLocationStore((state) => state.upsert);
   const loading = useLocationStore((state) => state.loading);
-
+  const latest = useLocationStore((state) => state.latest);
+  const latestLoading = useLocationStore((state) => state.latestLoading);
+  const fetchLatestForSelected = useLocationStore((state) => state.fetchLatestForSelected);
+  const router = useRouter();
+ const {
+    setSelectedById
+  } = useLocationStore();
+  const didInit = useRef(false);
+  const lastRequestedRef = useRef<number | null>(null);
   useEffect(() => {
-    if (loading || locations.length) return;
+    if (didInit.current || loading || locations.length) return;
+  didInit.current = true;
     fetchLocations();
   }, [fetchLocations, loading, locations.length]);
 
@@ -56,6 +68,13 @@ export default function Dashboard() {
     [locations],
   );
 
+  useEffect(() => {
+    if (!selected) return;
+    if (lastRequestedRef.current === selected.id) return;
+    lastRequestedRef.current = selected.id;
+    fetchLatestForSelected();
+  }, [fetchLatestForSelected, selected]);
+
   if (!selected || !latestMock) {
     return <p className="p-8 text-sm text-slate-500 text-center">Loading locations...</p>;
   }
@@ -68,7 +87,7 @@ export default function Dashboard() {
           <div className="w-full max-w-4xl mx-auto">
             <CitySearchInput
               onSelect={(city) => {
-                                const newLoc = createMockLocationWeather({
+                const newLoc = createMockLocationWeather({
                   id: Date.now(),
                   name: city.name,
                   lat: city.lat,
@@ -86,7 +105,8 @@ export default function Dashboard() {
           </div>
           <h1 className="text-xl font-semibold dark:text-white">Overview • {selected.name}</h1>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <WeatherCard latest={latestMock} loc={selected} />
+
+            <WeatherCard latest={latest ?? null} loc={selected} loading={latestLoading} />
             <div className=""></div>
           </div>
         </div>
@@ -127,18 +147,21 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Link
-                        href="/locations#compare"
-                        className="rounded-full border px-3 py-1 text-xs font-semibold hover:border-slate-500 border-slate-600 "
+                      <button
+                        onClick={() => {
+                          setSelectedById(loc.id);
+                          router.push("/dashboard");
+                        }}
+                        className="rounded-full cursor-pointer border border-slate-600 px-3 py-1 text-xs font-medium transition hover:border-slate-500 dark:border-slate-600"
                       >
                         View
-                      </Link>
+                      </button>
                       <button
                         onClick={() => {
                           toggleFollow(loc.id, !loc.isFollowed);
                           toast.info(`${loc.isFollowed ? "Unfollowed" : "Followed"} ${loc.name}`);
                         }}
-                        className="rounded-full border border-slate-600  hover:border-white/5 px-3 py-1 text-xs hover:bg-red-400"
+                        className="rounded-full cursor-pointer border border-slate-600  hover:border-white/5 px-3 py-1 text-xs hover:bg-red-400"
                       >
                         {loc.isFollowed ? "Unfollower" : "Follow"}
                       </button>
@@ -161,4 +184,3 @@ export default function Dashboard() {
     </section>
   );
 }
-

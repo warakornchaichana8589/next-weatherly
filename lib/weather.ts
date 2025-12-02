@@ -1,6 +1,6 @@
 import { saveWeather, getWeather } from "@/lib/db";
 import { fetcher } from "@/lib/fetcher";
-
+import { LatestResponse } from "@/type/weather"
 const MAX_CACHE_AGE = 30 * 60 * 1000; // 30 minutes
 
 export async function getWeatherOfflineFirst(locationId: string) {
@@ -16,9 +16,14 @@ export async function getWeatherOfflineFirst(locationId: string) {
 
 async function fetchAndUpdate(locationId: string) {
   try {
-    const data = await fetcher(`/api/weather/latest?location_id=${locationId}`);
-    await saveWeather(locationId, data);
-    return data;
+    const getDataLocation = await getWeather<LatestResponse>(locationId);
+    if (getDataLocation) {
+      const { latitude, longitude } = getDataLocation.data;
+      const data = await fetcher(`/api/weather/latest?lat=${latitude}&lon=${longitude}`);
+      await saveWeather(locationId, data);
+      return data;
+    }
+
   } catch (error) {
     console.warn("Offline mode, cannot fetch new data", error);
     const cached = await getWeather(locationId);

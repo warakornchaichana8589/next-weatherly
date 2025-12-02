@@ -66,7 +66,6 @@ async function requireUserId(req: NextRequest) {
 
 function logLocations(action: string, userId: string, locations: LocationWeather[]) {
   const summary = locations.map((loc) => ({ id: loc.id, name: loc.name, followed: loc.isFollowed }));
-  console.log(`[api/locations][${action}] token.id=${userId}`, summary);
 }
 
 export async function GET(req: NextRequest) {
